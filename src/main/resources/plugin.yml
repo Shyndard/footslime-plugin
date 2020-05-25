@@ -1,0 +1,5 @@
+main: shyndard.spigot.util.footslime.FootSlimePlugin
+name: FootSlime
+version: "1.0.0"
+description: FootSlime plugin for o2c
+author: Shyndard
