@@ -3,3 +3,9 @@ name: FootSlime
 version: "1.0.0"
 description: FootSlime plugin for o2c
 author: Shyndard
+commands:
+   footslime:
+      aliases:
+      - foobar
+      description: Footslime command
+      usage: /<command> [score|reset] [blue|red]
