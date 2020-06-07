@@ -6,6 +6,6 @@ author: Shyndard
 commands:
    footslime:
       aliases:
-      - foobar
+      - fs
       description: Footslime command
-      usage: /<command> [score|reset] [blue|red]
+      usage: /<command> [start|end|score|list|select]
