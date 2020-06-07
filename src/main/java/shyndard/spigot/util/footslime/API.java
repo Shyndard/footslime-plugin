@@ -7,7 +7,6 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.AbstractMap;
-import java.util.List;
 import java.util.AbstractMap.SimpleEntry;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +21,7 @@ public class API {
 	private static API API;
 	private ObjectMapper mapper;
 
-	private int matchId;
+	private Match match;
 
 	public API() {
 		mapper = new ObjectMapper();
@@ -40,20 +39,53 @@ public class API {
 		return API;
 	}
 
+	public void setMatch(Match match) {
+		this.match = match;
+	}
+
+	public Match getMatch() {
+		return this.match;
+	}
+
 	public Match[] getToDo() throws IOException {
-		return mapper.readValue(sendRequest("matchs?started=false", "GET", "{}").getValue(), Match[].class);
+		SimpleEntry<Integer, String> result = sendRequest("matchs?started=false", "GET", null);
+		if (result.getKey() == 200) {
+			return mapper.readValue(result.getValue(), Match[].class);
+		}
+		throw new IOException("API call http code " + result.getKey());
+	}
+
+	public Match getById(int id) throws IOException {
+		SimpleEntry<Integer, String> result = sendRequest("matchs/" + id, "GET", null);
+		if (result.getKey() == 200) {
+			return mapper.readValue(result.getValue(), Match.class);
+		}
+		throw new IOException("API call http code " + result.getKey());
 	}
 
 	public Match start() throws IOException {
-		return mapper.readValue(sendRequest("matchs/" + matchId + "/start", "PUT", "{}").getValue(), Match.class);
+		SimpleEntry<Integer, String> result = sendRequest("matchs/" + match.getId() + "/start", "PUT", "{}");
+		if (result.getKey() == 200) {
+			return mapper.readValue(result.getValue(), Match.class);
+		}
+		throw new IOException("API call http code " + result.getKey());
 	}
 
 	public Match end() throws IOException {
-		return mapper.readValue(sendRequest("matchs/" + matchId + "/end", "PUT", "{}").getValue(), Match.class);
+		SimpleEntry<Integer, String> result = sendRequest("matchs/" + match.getId() + "/end", "PUT", "{}");
+		if (result.getKey() == 200) {
+			return mapper.readValue(result.getValue(), Match.class);
+		}
+		throw new IOException("API call http code " + result.getKey());
 	}
 
 	public Match score(String teamName, int value) throws IOException {
-		return mapper.readValue(sendRequest("matchs/" + matchId + "/score/" + teamName + "/" + value, "PUT", "{}").getValue(), Match.class);
+		SimpleEntry<Integer, String> result = sendRequest(
+				"matchs/" + match.getId() + "/score/" + teamName + "/" + value, "PUT", "{}");
+		if (result.getKey() == 200) {
+			return mapper.readValue(result.getValue(), Match.class);
+		}
+		throw new IOException("API call http code " + result.getKey());
 	}
 
 	private SimpleEntry<Integer, String> sendRequest(String path, String method, String payload) throws IOException {
@@ -65,10 +97,13 @@ public class API {
 		connection.setRequestProperty("Accept-Charset", CHARSET);
 		connection.setRequestProperty("Content-Type", "application/json;charset=" + CHARSET);
 		connection.setRequestProperty("Authorization", bearerToken);
-		try (OutputStream output = connection.getOutputStream()) {
-			output.write(payload.getBytes(CHARSET));
+		if (payload != null) {
+			try (OutputStream output = connection.getOutputStream()) {
+				output.write(payload.getBytes(CHARSET));
+			}
 		}
-		if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+		int responseCode = connection.getResponseCode();
+		if (responseCode == HttpURLConnection.HTTP_OK) {
 			BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 			String inputLine;
 			StringBuffer response = new StringBuffer();
@@ -76,12 +111,8 @@ public class API {
 				response.append(inputLine);
 			}
 			in.close();
-			return new AbstractMap.SimpleEntry<>(connection.getResponseCode(), response.toString());
+			return new AbstractMap.SimpleEntry<>(responseCode, response.toString());
 		}
-		return new AbstractMap.SimpleEntry<>(connection.getResponseCode(), "Unknown error");
-	}
-
-	public void setMatchId(int matchId) {
-		this.matchId = matchId;
+		return new AbstractMap.SimpleEntry<>(responseCode, "Unknown error, code " + responseCode);
 	}
 }
